@@ -186,6 +186,89 @@ flowchart LR
 
 ---
 
+## 💬 سيناريوهات الاختبار (Test Scenarios)
+
+يحتوي النظام على **3 سيناريوهات رئيسية** للاختبار، جميعها مدعومة بالعربية والإنجليزية لضمان دقة الأداء في اللغتين.
+
+---
+
+### 1️⃣ سيناريو التقييم العادي والفرز الطبي
+**Routine Triage Scenario**
+
+> **الهدف**: التأكد من تركيز الـ Agent على الأعراض فقط، واستدلال التخصص الصحيح، وعرض قائمة الأطباء من قاعدة البيانات.
+
+#### 🇪🇬 بالعربية (Arabic)
+
+| الدور | النص |
+|------|------|
+| 👤 **المستخدم** | "أشعر بآلام مستمرة في ظهري وزادت في الفترة الأخيرة." |
+| 👤 **رد المريض بعد سؤال الـ AI** | "الألم يقتصر على أسفل الظهر بدون تنميل، وظهر تدريجياً بسبب الجلوس الطويل في العمل." |
+| 🤖 **النتيجة المتوقعة** | `urgency_level: ROUTINE` · `recommended_specialty: Orthopedics / عظام` · `doctors_list: [أطباء عظام]` |
+
+#### 🇬🇧 In English
+
+| Role | Text |
+|------|------|
+| 👤 **User** | "I have been experiencing persistent back pain that recently got worse." |
+| 👤 **User Reply** | "The pain is only in my lower back with no numbness, and it started gradually due to long hours of sitting at work." |
+| 🤖 **Expected Result** | `urgency_level: ROUTINE` · `recommended_specialty: Orthopedics` · `doctors_list: [Orthopedic doctors]` |
+
+---
+
+### 2️⃣ سيناريو الطوارئ والخط الأحمر
+**Emergency / Red-Flag Scenario**
+
+> **الهدف**: التأكد من إظهار شارة الطوارئ وتفريغ قائمة الأطباء تماماً (**100% Zero-Doctors**) في اللغتين العربية والإنجليزية.
+
+#### 🇪🇬 بالعربية (Arabic)
+
+| الدور | النص |
+|------|------|
+| 👤 **المستخدم** | "أشعر بثقل شديد وألم ضاغط في منتصف صدري مع ضيق في التنفس وتنميل في الذراع الأيسر." |
+| 🤖 **النتيجة المتوقعة** | `urgency_level: EMERGENCY` · `response_text: توجيه فوري للطوارئ` · `doctors_list: []` ✅ |
+
+#### 🇬🇧 In English
+
+| Role | Text |
+|------|------|
+| 👤 **User** | "I feel severe pressure and heavy pain in the center of my chest, along with shortness of breath and numbness in my left arm." |
+| 🤖 **Expected Result** | `urgency_level: EMERGENCY` · `response_text: Immediate ER referral` · `doctors_list: []` ✅ |
+
+---
+
+### 3️⃣ سيناريو منع الهلوسة / التخصص غير المتوفر
+**Zero-Hallucination Scenario**
+
+> **الهدف**: إثبات ربط النظام الحقيقي بـ SQL؛ فعند طلب تخصص غير مسجّل (مثل الأطفال)، يرفض اختراع أسماء ويخبر المريض بعدم التوفر.
+
+#### 🇪🇬 بالعربية (Arabic)
+
+| الدور | النص |
+|------|------|
+| 👤 **المستخدم** | "طفلي عمره 5 سنوات يعاني من ارتفاع في درجة الحرارة وسعال خفيف منذ يومين." |
+| 👤 **رد المريض بعد سؤال الـ AI** | "الحرارة 38.5 والسعال خفيف ولا توجد أعراض أخرى، نعم قم بالبحث عن طبيب مناسب." |
+| 🤖 **النتيجة المتوقعة** | `urgency_level: ROUTINE` · `recommended_specialty: Pediatrics / أطفال` · `doctors_list: []` · `response_text: اعتذار + التخصص غير متوفر` ✅ |
+
+#### 🇬🇧 In English
+
+| Role | Text |
+|------|------|
+| 👤 **User** | "My 5-year-old child has a fever and mild cough for the past two days." |
+| 👤 **User Reply** | "The fever is 38.5°C and cough is mild with no other symptoms. Yes, please search for a doctor." |
+| 🤖 **Expected Result** | `urgency_level: ROUTINE` · `recommended_specialty: Pediatrics` · `doctors_list: []` · `response_text: Apology + specialty unavailable` ✅ |
+
+---
+
+### 📊 ملخص السيناريوهات
+
+| # | السيناريو | الهدف الأساسي | عدد الأطباء المتوقع | مستوى الطوارئ |
+|---|-----------|---------------|---------------------|---------------|
+| 1 | Routine Triage | الفرز الطبي العادي | > 0 | `ROUTINE` |
+| 2 | Emergency / Red-Flag | كشف الطوارئ | **0** | `EMERGENCY` |
+| 3 | Zero-Hallucination | منع الهلوسة عند غياب البيانات | **0** | `ROUTINE` |
+
+---
+
 ## 💬 سيناريوهات المحادثة
 
 ### 🚨 سيناريو 1: طوارئ
@@ -256,10 +339,11 @@ pip install -r requirements.txt
 **requirements.txt:**
 
 ```txt
-langchain-core>=0.3.0
-langchain-google-genai>=2.0.0
-pydantic>=2.0.0
-python-dotenv>=1.0.0
+langchain-google-genai 
+langchain-core 
+fastapi  # backend server
+uvicorn # local server like nodmon
+python-dotenv
 ```
 
 ---
@@ -286,7 +370,7 @@ GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
 ---
 
 ## 🗄️ قاعدة البيانات
-
+جدول واحد فقط بدون اي علاقات لانة فقط demo
 ```sql
 CREATE TABLE doctors (
     id            INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -296,8 +380,6 @@ CREATE TABLE doctors (
     hospital_en   TEXT NOT NULL,
     specialty_ar  TEXT NOT NULL,
     specialty_en  TEXT NOT NULL,
-    city_ar       TEXT,
-    city_en       TEXT
 );
 ```
 
@@ -410,9 +492,8 @@ if output.urgency_level == "EMERGENCY":
 - [ ] RAG على تقارير طبية PDF
 - [ ] Human-in-the-Loop للطوارئ الحرجة
 - [ ] واجهة FastAPI
-- [ ] واجهة Streamlit / React
+- [ ] واجهة  React
 - [ ] نظام تسجيل وتقييم (LangSmith)
-- [ ] دعم نماذج بديلة (OpenAI / Anthropic / Ollama)
 
 ---
 
@@ -424,9 +505,5 @@ if output.urgency_level == "EMERGENCY":
 ---
 
 <div align="center">
-
-**صُنع بـ ❤️ لخدمة الرعاية الصحية**
-
 ⭐ Demo Project — Production version powered by **LangGraph**
-
 </div>
