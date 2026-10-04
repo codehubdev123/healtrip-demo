@@ -318,19 +318,40 @@ print(response["doctors_list"])
 ```
 
 ---
-
 ## 📁 هيكل المشروع
 
-```
-healtrip-ai/
-├── agent.py                # المنطق الكامل للوكيل
-├── config.py               # تحميل المتغيرات البيئية
-├── healtrip.db             # قاعدة بيانات SQLite
-├── requirements.txt
-├── .env
-├── README.md
-├── tests/
-└── data/
+> 📌 **ملاحظة**: النسخة الحالية (Demo) مبنية بـ **Python + LangChain** لأغراض العرض السريع.
+> البنية الإنتاجية الكاملة ستُبنى بـ **Node.js + TypeScript** مع تطبيق  Architecture.
+
+```text
+demo_node_app_strcuture/
+├── package.json
+├── src/
+│   ├── app.ts
+│   ├── config/
+│   │   └── db.ts
+│   ├── controllers/
+│   │   └── auth/
+│   │       └── RegisterController.ts
+│   ├── middlewares/
+│   │   ├── error.middleware.ts
+│   │   └── validation.middleware.ts
+│   ├── models/
+│   │   └── schema.ts
+│   ├── repositories/
+│   │   └── UserRepository.ts
+│   ├── routes/
+│   │   └── authRoutes.ts
+│   ├── server.ts
+│   ├── services/
+│   │   └── auth/
+│   │       └── RegisterService.ts
+│   ├── utils/
+│   │   ├── AppError.ts
+│   │   └── catchAsync.ts
+│   └── validations/
+│       └── auth.validation.ts
+└── tsconfig.json
 ```
 
 ---
