@@ -4,8 +4,9 @@
 
 ![Python](https://img.shields.io/badge/Python-3.10%2B-blue)
 ![LangChain](https://img.shields.io/badge/LangChain-latest-green)
-![Gemini](https://img.shields.io/badge/Google-Gemini-orange)
-![License](https://img.shields.io/badge/License-MIT-yellow)
+![LangGraph](https://img.shields.io/badge/LangGraph-Planned-orange)
+![Gemini](https://img.shields.io/badge/Google-Gemini-red)
+![Status](https://img.shields.io/badge/Status-Demo-success)
 
 **مساعد ذكاء اصطناعي ثنائي اللغة (عربي/إنجليزي) يحلّل الأعراض، يحدد الطوارئ، ويقترح الأطباء والمستشفيات**
 
@@ -19,6 +20,7 @@
 - [المميزات](#-المميزات)
 - [كيف يعمل النظام](#-كيف-يعمل-النظام)
 - [مخطط سير العمل](#-مخطط-سير-العمل-workflow-diagram)
+- [البنية المعمارية المستقبلية (LangGraph)](#-البنية-المعمارية-المستقبلية-langgraph)
 - [سيناريوهات المحادثة](#-سيناريوهات-المحادثة)
 - [المتطلبات](#-المتطلبات)
 - [التثبيت](#-التثبيت)
@@ -28,8 +30,7 @@
 - [هيكل المشروع](#-هيكل-المشروع)
 - [بروتوكولات الأمان](#-بروتوكولات-الأمان)
 - [التقنيات المستخدمة](#-التقنيات-المستخدمة)
-- [المساهمة](#-المساهمة)
-- [الترخيص](#-الترخيص)
+- [خارطة التطوير](#-خارطة-التطوير)
 
 ---
 
@@ -45,6 +46,8 @@
 
 النظام مبني على **محادثة متعددة الأدوار (Multi-turn Conversation)** وليس مجرد سؤال → جواب.
 
+> 📌 **ملاحظة**: هذه النسخة هي **Demo / Proof of Concept**، تم بناؤها باستخدام LangChain. النسخة الإنتاجية الكاملة ستُبنى على **LangGraph** لإدارة أفضل لتدفّق الحالات (State Machine) والعقد (Nodes).
+
 ---
 
 ## ✨ المميزات
@@ -57,6 +60,7 @@
 - 🧠 **أسئلة توضيحية ذكية**: متابعة تلقائية عند الأعراض العامة
 - 🚫 **حماية كاملة من الهلوسة**: عند عدم وجود نتائج → اعتذار واضح
 - 🔐 **حماية الخصوصية**: لا يسأل عن الموقع الجغرافي أو الرسوم الطبية
+- 🔄 **Context Injection**: حقن نتائج القاعدة في الـ Prompt لمنع الاختلاق
 
 ---
 
@@ -114,6 +118,71 @@ flowchart TD
     style Apologize fill:#ffe0b2,stroke:#e65100,stroke-width:2px
     style End3 fill:#ffe0b2,stroke:#e65100,stroke-width:2px
 ```
+
+---
+
+## 🏗️ البنية المعمارية المستقبلية (LangGraph)
+
+هذه النسخة الحالية (Demo) مبنية على **LangChain** فقط، حيث تُدار سلسلة القرارات عبر شروط برمجية (if/else) داخل دالة `run_healtrip_agent`.
+
+في **النسخة الإنتاجية الكاملة**، سيتم استخدام **LangGraph** لتحويل هذا التدفّق إلى **رسم بياني للحالات (State Graph)** يوفّر:
+
+- ✅ **إدارة واضحة للعقد (Nodes)**: كل خطوة تصبح عقدة مستقلة (`triage_node`, `clarify_node`, `search_node`, `respond_node`)
+- ✅ **انتقالات شرطية (Conditional Edges)**: تحكّم دقيق بمسار المحادثة بناءً على الحالة
+- ✅ **ذاكرة محادثة دائمة (Persistent State)**: حفظ حالة المستخدم عبر عدة جلسات
+- ✅ **Human-in-the-Loop**: إمكانية تدخل بشري عند الحاجة (مثلًا: تأكيد طوارئ)
+- ✅ **إعادة المحاولة التلقائية (Retry)**: عند فشل استدعاء أداة أو LLM
+- ✅ **قابلية المراقبة (Observability)**: تتبع كامل لكل خطوة عبر LangSmith
+
+### 📊 البنية المقترحة بـ LangGraph
+
+```mermaid
+flowchart LR
+    Start([START]) --> Triage[🚨 triage_node<br/>فحص الطوارئ]
+    
+    Triage --> TriageRouter{urgency?}
+    
+    TriageRouter -->|EMERGENCY| EmergencyNode[📞 emergency_node]
+    TriageRouter -->|ROUTINE| ClarityNode[🔍 clarify_node]
+    
+    ClarityNode --> ClarityRouter{واضح؟}
+    
+    ClarityRouter -->|لا| AskNode[💬 ask_questions_node]
+    AskNode --> WaitNode[⏳ human_input_node]
+    WaitNode --> Triage
+    
+    ClarityRouter -->|نعم| SpecialtyNode[🩺 determine_specialty_node]
+    
+    SpecialtyNode --> SearchNode[🗄️ search_db_node]
+    
+    SearchNode --> ResultRouter{وُجد؟}
+    
+    ResultRouter -->|نعم| RespondNode[✅ respond_with_doctors_node]
+    ResultRouter -->|لا| ApologizeNode[🙏 apologize_node]
+    
+    EmergencyNode --> End([END])
+    RespondNode --> End
+    ApologizeNode --> End
+    
+    style Start fill:#e1f5ff
+    style End fill:#c8e6c9
+    style Triage fill:#ffebee
+    style EmergencyNode fill:#ffcdd2
+    style ClarityNode fill:#fff3e0
+    style SearchNode fill:#f3e5f5
+    style RespondNode fill:#c8e6c9
+```
+
+### 🆚 مقارنة: LangChain vs LangGraph
+
+| المعيار | LangChain (Demo) | LangGraph (Production) |
+|---------|-------------------|------------------------|
+| إدارة التدفّق | شروط داخل دالة | رسم بياني صريح |
+| إضافة خطوة جديدة | تعديل الكود | إضافة Node |
+| الذاكرة | يدوية (`chat_history`) | مُدمجة (Checkpointer) |
+| إعادة المحاولة | يدوية | مُدمجة (Retry Policy) |
+| التدخل البشري | صعب | `interrupt_before` |
+| قابلية المراقبة | محدودة | LangSmith مدمج |
 
 ---
 
@@ -279,13 +348,17 @@ if output.urgency_level == "EMERGENCY":
 
 - ✅ `doctors_list = []`
 - ✅ رسالة اعتذار واضحة
-- ❌ ممنوع اختلاق أسماء
+- ❌ ممنوع اختلاق أسماء أطباء أو مستشفيات
 
 ### 3. حماية خصوصية المستخدم
 
 - ❌ لا سؤال عن المدينة
 - ❌ لا سؤال عن الرسوم
-- ✅ التركيز على الأعراض
+- ✅ التركيز على الأعراض فقط
+
+### 4. مطابقة اللغة تلقائيًا
+
+يرد النظام بنفس لغة المستخدم تلقائيًا (عربي/إنجليزي).
 
 ---
 
@@ -294,33 +367,38 @@ if output.urgency_level == "EMERGENCY":
 | المكوّن | التقنية |
 |---------|---------|
 | اللغة | Python 3.10+ |
-| إطار العمل | LangChain Core |
+| إطار العمل الحالي | LangChain Core |
+| إطار العمل المستقبلي | **LangGraph** (للإنتاج) |
 | النموذج اللغوي | Google Gemini |
 | Structured Output | Pydantic v2 |
 | قاعدة البيانات | SQLite 3 |
-| Tool Calling | @tool Decorator |
+| Tool Calling | `@tool` Decorator |
+| إدارة الأسرار | python-dotenv |
 
 ---
 
-## 🤝 المساهمة
+## 🗺️ خارطة التطوير
 
-1. Fork المشروع
-2. `git checkout -b feature/NewFeature`
-3. `git commit -m 'Add NewFeature'`
-4. `git push origin feature/NewFeature`
-5. افتح Pull Request
+- [x] فرز طبي أساسي
+- [x] Tool Calling على SQLite
+- [x] Structured Output مع Pydantic
+- [x] حماية من الهلوسة
+- [x] أسئلة توضيحية تلقائية
+- [ ] **الانتقال إلى LangGraph** لإدارة العقد والحالات
+- [ ] ذاكرة محادثة دائمة (Persistent Memory via Checkpointer)
+- [ ] RAG على تقارير طبية PDF
+- [ ] Human-in-the-Loop للطوارئ الحرجة
+- [ ] واجهة FastAPI
+- [ ] واجهة Streamlit / React
+- [ ] نظام تسجيل وتقييم (LangSmith)
+- [ ] دعم نماذج بديلة (OpenAI / Anthropic / Ollama)
 
 ---
 
 ## ⚠️ إخلاء مسؤولية
 
 > هذا النظام **أداة مساعدة للفرز الأولي فقط**، ولا يُعد بديلًا عن استشارة طبيب مختص.
-
----
-
-## 📄 الترخيص
-
-مرخّص تحت **MIT License** — راجع [LICENSE](LICENSE).
+> في الحالات الطارئة، اتصل بالإسعاف فورًا.
 
 ---
 
@@ -328,6 +406,6 @@ if output.urgency_level == "EMERGENCY":
 
 **صُنع بـ ❤️ لخدمة الرعاية الصحية**
 
-⭐ إذا أعجبك المشروع، لا تنسَ إعطاءه نجمة!
+⭐ Demo Project — Production version powered by **LangGraph**
 
 </div>
