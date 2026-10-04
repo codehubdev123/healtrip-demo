@@ -1,0 +1,10 @@
+langchain-google-genai 
+langchain-core 
+fastapi 
+uvicorn 
+python-dotenv
+# this for me only because iam using neovim molton.nvim 
+pynvim 
+ipykernel 
+jupyter_client 
+nbformat

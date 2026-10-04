@@ -319,11 +319,9 @@ flowchart LR
 
 ## 🛠️ المتطلبات
 
-- Python 3.10+
+- Python 
 - مفتاح Google AI Studio (Gemini)
 - SQLite 3
-- RAM ≥ 4GB
-
 ---
 
 ## 📦 التثبيت
